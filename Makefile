@@ -7,11 +7,19 @@ VG_OS := linux
 VG_BASE_URL := https://github.com/tsenart/vegeta/releases/download/cli%2F
 VEGETA_URL := $(VG_BASE_URL)v$(VG_VERSION)/vegeta-$(VG_VERSION)-$(VG_OS)-$(VG_ARCH).tar.gz
 
-VG_EXTRA_ARGS := '-keepalive -http2=f -header "Content-type:gzip"'
+VG_EXTRA_ARGS :=
+INPUT_PLAN := input/sample-plan.conf
 
 ######################
 # Setup
 ######################
+
+all: help
+
+help:
+	@echo "Please use:"
+	@echo " make [upgrade|download|install|run]"
+	@echo " make run INPUT_PLAN=input/my-plan.txt"
 
 .PHONY: setup install download
 
@@ -40,7 +48,6 @@ clean:
 ######################
 # Runner
 ######################
-INPUT_PLAN := input/sample-plan.txt
 
 run:
-	@./runner.sh $(INPUT_PLAN) $(VG_EXTRA_ARGS)
+	./runner.sh $(INPUT_PLAN)

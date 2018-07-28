@@ -28,6 +28,6 @@ To setup environment, please create config files inside input directory. See [Re
 
 ### run
 
-To run the tests please refeer to the test plan:
+To run the tests, just tell what definition file of your test plan:
 
-`make run INPUT_PLAN=input/sample-plan.txt`
+`make run INPUT_PLAN=input/sample-plan.conf`

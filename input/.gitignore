@@ -1,5 +1,5 @@
 *
 !.gitignore
 !README.md
-!sample-input.txt
-!sample-plan.txt
+!sample-input.log
+!sample-plan.conf
