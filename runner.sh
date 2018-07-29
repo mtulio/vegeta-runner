@@ -4,8 +4,8 @@
 
 set -e
 set -x
-sudo ulimit -s 65535 |true
-sudo ulimit -n 65535 |true
+ulimit -s 65535 |true
+ulimit -n 65535 |true
 set +x
 
 PLAN_FILE=$1
@@ -19,6 +19,8 @@ VEGETA_OUTPUT_REPORTS=()
 function run_plan(){
   PLAN_RATE=$1
   PLAN_NAME_LABEL_RATE=${PLAN_NAME_LABEL}-${PLAN_RATE}rps
+  TIMESTAMP=$(date +%s)
+  echo "# Limits: ofiles-n[$(ulimit -n)] uproc-u[$(ulimit -u)]"
 
   set -x
   ${VEGETA_BIN} attack \
@@ -29,11 +31,11 @@ function run_plan(){
     -targets=input/${PLAN_INPUT} \
     -duration=${PLAN_TEST_DURATION} \
     -rate=${PLAN_RATE} \
-    > output/${PLAN_NAME_LABEL_RATE}.bin
+    > output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
   set +x
-  if [[ -f output/${PLAN_NAME_LABEL_RATE}.bin ]]; then
+  if [[ -f output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin ]]; then
     echo "Results are saved on file: output/${PLAN_NAME_LABEL_RATE}.bin"
-    VEGETA_OUTPUT_REPORTS+=output/${PLAN_NAME_LABEL_RATE}.bin
+    VEGETA_OUTPUT_REPORTS+=output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
   fi
 }
 
