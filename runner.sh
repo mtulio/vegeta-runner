@@ -4,14 +4,25 @@
 
 set -e
 set -x
-ulimit -s 65535 |true
-ulimit -n 65535 |true
+ulimit -u 65535
+ulimit -n 65535
 set +x
 
 PLAN_FILE=$1
 VEGETA_EXTRA_ARGS="-keepalive -http2=f -header=\"Content-type:gzip\""
-VEGETA_BIN=${3:-./bin/vegeta}
+VEGETA_BIN=${2:-./bin/vegeta}
 VEGETA_OUTPUT_REPORTS=()
+
+PATH_INPUT=${3:-input/}
+PATH_OUTPUT=${4:-output/}
+
+#########################
+# Common
+#########################
+
+function _echo() {
+  echo "[$(date)] $1"
+}
 
 #########################
 # Vegeta Plan
@@ -20,7 +31,7 @@ function run_plan(){
   PLAN_RATE=$1
   PLAN_NAME_LABEL_RATE=${PLAN_NAME_LABEL}-${PLAN_RATE}rps
   TIMESTAMP=$(date +%s)
-  echo "# Limits: ofiles-n[$(ulimit -n)] uproc-u[$(ulimit -u)]"
+  _echo "# System Limits: ofiles-n[$(ulimit -n)] uproc-u[$(ulimit -u)]"
 
   set -x
   ${VEGETA_BIN} attack \
@@ -28,14 +39,14 @@ function run_plan(){
     -http2=f \
     -header="User-Agent:vegeta-${PLAN_NAME_LABEL}" \
     -header="Accept-Encoding:gzip" \
-    -targets=input/${PLAN_INPUT} \
+    -targets=${PATH_INPUT}${PLAN_INPUT} \
     -duration=${PLAN_TEST_DURATION} \
     -rate=${PLAN_RATE} \
-    > output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
+    > ${PATH_OUTPUT}${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
   set +x
-  if [[ -f output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin ]]; then
-    echo "Results are saved on file: output/${PLAN_NAME_LABEL_RATE}.bin"
-    VEGETA_OUTPUT_REPORTS+=output/${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
+  if [[ -f ${PATH_OUTPUT}${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin ]]; then
+    _echo "Results are saved on file: ${PATH_OUTPUT}${PLAN_NAME_LABEL_RATE}.bin"
+    VEGETA_OUTPUT_REPORTS+=${PATH_OUTPUT}${PLAN_NAME_LABEL_RATE}-${TIMESTAMP}.bin
   fi
 }
 
@@ -63,7 +74,7 @@ function setup_plan(){
 function run_report(){
 
   OUT_FILES=""
-  for f in $(ls output/${PLAN_NAME_LABEL}*.bin); do
+  for f in $(ls ${PATH_OUTPUT}${PLAN_NAME_LABEL}*.bin); do
     if [[ $OUT_FILES == "" ]]; then
       OUT_FILES="${f}"
     else
@@ -71,26 +82,27 @@ function run_report(){
     fi
   done
 
-  echo "#> Creating JSON report in output/${PLAN_NAME}.json"
-  ${VEGETA_BIN} report -inputs=${OUT_FILES} -reporter=json > output/${PLAN_NAME}.json
+  _echo "#> Creating JSON report in ${PATH_OUTPUT}${PLAN_NAME}.json"
+  ${VEGETA_BIN} report --type=json --output output/${PLAN_NAME}.json ${PATH_OUTPUT}${PLAN_NAME_LABEL}*.bin
 
-  echo "#> Creating Text report in output/${PLAN_NAME}.txt"
-  ${VEGETA_BIN} report -inputs=${OUT_FILES} -reporter=text > output/${PLAN_NAME}.txt
+  _echo "#> Creating Text report in ${PATH_OUTPUT}${PLAN_NAME}.txt"
+  ${VEGETA_BIN} report --type=text --output output/${PLAN_NAME}.txt ${PATH_OUTPUT}${PLAN_NAME_LABEL}*.bin
 
-  echo "#> Creating HTML report in output/${PLAN_NAME}.html"
-  ${VEGETA_BIN} report -inputs=${OUT_FILES} -reporter=plot > output/${PLAN_NAME}.html
+  _echo "#> Creating HTML report in ${PATH_OUTPUT}${PLAN_NAME}.html"
+  ${VEGETA_BIN} report --type=hdrplot --output output/${PLAN_NAME}.html ${PATH_OUTPUT}${PLAN_NAME_LABEL}*.bin
 
-  echo "#> Creating JSON report in output/${PLAN_NAME}-hist.txt"
-  ${VEGETA_BIN} report -inputs=${OUT_FILES} \
-    -reporter='hist[0,10ms,100ms,200ms,300ms,400ms,500ms,1s,2s,10s,30s,60s]' > output/${PLAN_NAME}-hist.txt
-}
+  _echo "#> Creating JSON report in ${PATH_OUTPUT}${PLAN_NAME}-hist.txt"
+  ${VEGETA_BIN} report \
+    --type='hist[0,10ms,100ms,200ms,300ms,400ms,500ms,1s,2s,10s,30s,60s]' \
+    --output output/${PLAN_NAME}-hist.txt \
+    ${PATH_OUTPUT}${PLAN_NAME_LABEL}*.bin
 
 
 #########################
 # Main
 #########################
 
-echo "# Parsing plan file $PLAN_FILE"
+_echo "# Parsing plan file $PLAN_FILE"
 while read line; do
   if [[ $line == "#"* ]]; then continue; fi
   if [[ $line =~ ^""$ ]]; then continue; fi
