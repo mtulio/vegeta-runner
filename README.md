@@ -1,6 +1,6 @@
 # vegeta-runner
 
-Vegeta load test environment
+[Vegeta](https://github.com/tsenart/vegeta) load test environment to run ramp-ups / batteries (while ATM of dev this repo it was not supported).
 
 ## Install
 
